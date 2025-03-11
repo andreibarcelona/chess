@@ -1,4 +1,6 @@
-
+//Andrei Barcelona
+// 3/10/25
+// Project is chess. My goal was to code Long Knight which moves three squares vertically or horizontally unlike the usual two squares.
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -32,6 +34,9 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
 	private static final String RESOURCES_WQUEEN_PNG = "wqueen.png";
 	private static final String RESOURCES_WPAWN_PNG = "wpawn.png";
 	private static final String RESOURCES_BPAWN_PNG = "bpawn.png";
+    private static final String LONG_KNIGHT_PNG = "BlongKnight.png";
+    private static final String WLONG_KNIGHT_PNG = "WlongKnight.png";
+
 	
 	// Logical and graphical representations of board
 	private final Square[][] board;
@@ -58,9 +63,34 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
         this.addMouseListener(this);
         this.addMouseMotionListener(this);
 
-        //TO BE IMPLEMENTED FIRST
-     
+         // Board Constructor
+    // Preconditions:
+    // - GameWindow g must not be null.
+    // - Image resources must be available.
+    // - Square and Piece classes must be defined.
+    // Postconditions:
+    // - An 8x8 board of Square objects is created.
+    // - Squares alternate between white and black.
+    // - Pieces are initialized using initializePieces.
+    // - whiteTurn is set to true.
+    // - Event listeners for mouse actions are added.
+        board[0][0]= new Square(this, true, 0,0);
       //for (.....)  
+      for ( int row = 0; row < 8; row++)
+      {
+        for ( int col = 0; col < 8; col++) 
+        {
+          if( row  % 2 == 0 && col % 2 == 0 || row % 2 == 1 && col % 2 == 1 )
+          {
+            board[row][col]= new Square(this, true,row, col);
+          }
+          else 
+          {
+            board[row][col]= new Square(this, false, row, col);
+          }
+          this.add(board[row][col]); 
+        }
+      }
 //        	populate the board with squares here. Note that the board is composed of 64 squares alternating from 
 //        	white to black.
 
@@ -76,13 +106,22 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
     }
 
     
-	//set up the board such that the black pieces are on one side and the white pieces are on the other.
-	//since we only have one kind of piece for now you need only set the same number of pieces on either side.
-	//it's up to you how you wish to arrange your pieces.
+	   // initializePieces Method
+    // Preconditions:
+    // - board must be a non-null 8x8 array of Square objects.
+    // - Image resources for pieces must be available.
+    // - Piece and Square classes must support methods like put().
+    // Postconditions:
+    // - A black long knight is placed at (0,0).
+    // - A white knight is placed at (7,7).
+    // - All other squares remain empty unless expanded.
     private void initializePieces() {
     	
-    	board[0][0].put(new Piece(true, RESOURCES_WKING_PNG));
-
+    	board[0][0].put(new Piece(false, LONG_KNIGHT_PNG));
+        board[7][7].put(new Piece(true, WLONG_KNIGHT_PNG));
+        board[0][7].put(new Piece(false, LONG_KNIGHT_PNG));
+        board[7][0].put(new Piece(true, WLONG_KNIGHT_PNG));
+        
     }
 
     public Square[][] getSquareArray() {
@@ -142,17 +181,41 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
         repaint();
     }
 
-    //TO BE IMPLEMENTED!
-    //should move the piece to the desired location only if this is a legal move.
-    //use the pieces "legal move" function to determine if this move is legal, then complete it by
-    //moving the new piece to it's new board location. 
+       // mouseReleased Method
+    // Preconditions:
+    // - currPiece must not be null.
+    // - fromMoveSquare must reference a valid square containing currPiece.
+    // - getLegalMoves must return a valid list of potential destination squares.
+    // Postconditions:
+    // - If the move is legal:
+    //   - currPiece is moved to endSquare.
+    //   - fromMoveSquare is cleared.
+    //   - Turn alternates between White and Black.
+    // - If the move is illegal:
+    //   - currPiece remains at its original position.
+    // - Borders for all squares are cleared.
+    // - currPiece is set to null.
+    // - The board is repainted.
     @Override
     public void mouseReleased(MouseEvent e) {
         Square endSquare = (Square) this.getComponentAt(new Point(e.getX(), e.getY()));
         
         //using currPiece
-        
-       
+        for(Square[] row: board){
+            for(Square s: row){
+                s.setBorder(null);
+            }
+        }
+   
+            // true = white, false = black
+           if(currPiece.getColor() && whiteTurn || !currPiece.getColor() && !whiteTurn) {
+            if(currPiece.getLegalMoves(this, fromMoveSquare).contains(endSquare)){
+                endSquare.put(currPiece);
+                fromMoveSquare.removePiece();
+                 whiteTurn = !whiteTurn;
+             }
+        }
+
         fromMoveSquare.setDisplay(true);
         currPiece = null;
         repaint();
@@ -162,7 +225,12 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
     public void mouseDragged(MouseEvent e) {
         currX = e.getX() - 24;
         currY = e.getY() - 24;
-
+        if (currPiece != null)
+        {
+            for(Square s: currPiece.getLegalMoves(this, fromMoveSquare)) {
+            s.setBorder(BorderFactory.createLineBorder(Color.red));
+            }
+        }
         repaint();
     }
 
