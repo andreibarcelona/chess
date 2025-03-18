@@ -112,6 +112,10 @@ public ArrayList<Square> getControlledSquares(Square[][] board, Square start) {
 // Purpose: Returns a list of legal moves for the piece located at the `start` square.
 // A legal move is a square that is either unoccupied or occupied by an opponent's piece.
 
+
+
+//The piece Long knight moves 3 squares vertically or horizontally and two the left/right unlike the usual two squares
+
 public ArrayList<Square> getLegalMoves(Board b, Square start) {
     // Preconditions:
     // - The `board` is a valid 8x8 array of `Square` objects.
