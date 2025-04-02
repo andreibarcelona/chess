@@ -1,6 +1,7 @@
 //Andrei Barcelona
 // 3/10/25
-// Project is chess. My goal was to code Long Knight which moves three squares vertically or horizontally unlike the usual two squares.
+// Project is Chess part 1 - My goal was to code Long Knight which moves three squares vertically or horizontally unlike the usual two squares.
+// Chess part 2 - Creates a full board with prefered pieces and adds a method that checks wether the king is in check. 
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -26,16 +27,20 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
 	private static final String RESOURCES_BBISHOP_PNG = "bbishop.png";
 	private static final String RESOURCES_WKNIGHT_PNG = "wknight.png";
 	private static final String RESOURCES_BKNIGHT_PNG = "bknight.png";
-	private static final String RESOURCES_WROOK_PNG = "wrook.png";
-	private static final String RESOURCES_BROOK_PNG = "brook.png";
-	private static final String RESOURCES_WKING_PNG = "wking.png";
-	private static final String RESOURCES_BKING_PNG = "bking.png";
-	private static final String RESOURCES_BQUEEN_PNG = "bqueen.png";
-	private static final String RESOURCES_WQUEEN_PNG = "wqueen.png";
-	private static final String RESOURCES_WPAWN_PNG = "wpawn.png";
-	private static final String RESOURCES_BPAWN_PNG = "bpawn.png";
+	private static final String WROOK_PNG = "wrook.png";
+	private static final String BROOK_PNG = "brook.png";
+	private static final String WKING_PNG = "wking.png";
+	private static final String BKING_PNG = "bking.png";
+	private static final String BQUEEN_PNG = "bqueen.png";
+	private static final String WQUEEN_PNG = "wqueen.png";
+	private static final String WPAWN_PNG = "wpawn.png";
+	private static final String BPAWN_PNG = "bpawn.png";
     private static final String LONG_KNIGHT_PNG = "BlongKnight.png";
     private static final String WLONG_KNIGHT_PNG = "WlongKnight.png";
+    private static final String BLACKSLIME_PNG = "blackSlime.png";
+    private static final String WHITESLIME_PNG = "whiteSlime.png";
+
+
 
 	
 	// Logical and graphical representations of board
@@ -117,10 +122,47 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
     // - All other squares remain empty unless expanded.
     private void initializePieces() {
     	
-    	board[0][0].put(new Piece(false, LONG_KNIGHT_PNG));
-        board[7][7].put(new Piece(true, WLONG_KNIGHT_PNG));
-        board[0][7].put(new Piece(false, LONG_KNIGHT_PNG));
-        board[7][0].put(new Piece(true, WLONG_KNIGHT_PNG));
+    	board[0][1].put(new LongKnight(false, LONG_KNIGHT_PNG));
+        board[7][6].put(new LongKnight(true, WLONG_KNIGHT_PNG));
+        board[0][6].put(new LongKnight(false, LONG_KNIGHT_PNG));
+        board[7][1].put(new LongKnight(true, WLONG_KNIGHT_PNG));
+
+        board[0][2].put(new Slime(false, BLACKSLIME_PNG));
+        board[7][2].put(new Slime(true, WHITESLIME_PNG));
+        board[0][5].put(new Slime(false, BLACKSLIME_PNG));
+        board[7][5].put(new Slime(true, WHITESLIME_PNG));
+
+        board[0][3].put(new Queen(false, BQUEEN_PNG));
+        board[7][3].put(new Queen(true, WQUEEN_PNG ));
+
+        board[0][4].put(new King(false, BKING_PNG ));
+        board[7][4].put(new King(true, WKING_PNG ));
+
+        board[0][7].put(new Rook(false, BROOK_PNG ));
+        board[7][7].put(new Rook(true, WROOK_PNG ));
+        board[0][0].put(new Rook(false, BROOK_PNG ));
+        board[7][0].put(new Rook(true, WROOK_PNG ));
+
+        board[1][0].put(new Pawn(false, BPAWN_PNG ));
+        board[1][1].put(new Pawn(false, BPAWN_PNG ));
+        board[1][2].put(new Pawn(false, BPAWN_PNG ));
+        board[1][3].put(new Pawn(false, BPAWN_PNG ));
+        board[1][4].put(new Pawn(false, BPAWN_PNG ));
+        board[1][5].put(new Pawn(false, BPAWN_PNG ));
+        board[1][6].put(new Pawn(false, BPAWN_PNG ));
+        board[1][7].put(new Pawn(false, BPAWN_PNG ));
+
+        board[6][0].put(new Pawn(true, WPAWN_PNG ));
+        board[6][1].put(new Pawn(true, WPAWN_PNG ));
+        board[6][2].put(new Pawn(true, WPAWN_PNG ));
+        board[6][3].put(new Pawn(true, WPAWN_PNG ));
+        board[6][4].put(new Pawn(true, WPAWN_PNG ));
+        board[6][5].put(new Pawn(true, WPAWN_PNG ));
+        board[6][6].put(new Pawn(true, WPAWN_PNG ));
+        board[6][7].put(new Pawn(true, WPAWN_PNG ));
+        
+
+        
         
     }
 
@@ -196,6 +238,8 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
     // - Borders for all squares are cleared.
     // - currPiece is set to null.
     // - The board is repainted.
+    // - If a move that does/does not capture a piece but causes the king to be in check
+    // it will put the piece back to where it came from and restore the captured piece (if one was captured)
     @Override
     public void mouseReleased(MouseEvent e) {
         Square endSquare = (Square) this.getComponentAt(new Point(e.getX(), e.getY()));
@@ -210,9 +254,18 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
             // true = white, false = black
            if(currPiece.getColor() && whiteTurn || !currPiece.getColor() && !whiteTurn) {
             if(currPiece.getLegalMoves(this, fromMoveSquare).contains(endSquare)){
+                Piece capturedPiece = endSquare.getOccupyingPiece();
                 endSquare.put(currPiece);
                 fromMoveSquare.removePiece();
-                 whiteTurn = !whiteTurn;
+
+                if (isInCheck(whiteTurn)) {
+                    fromMoveSquare.put(currPiece);
+                    endSquare.put(capturedPiece);
+                }
+                else 
+                {
+                    whiteTurn = !whiteTurn;
+                }
              }
         }
 
@@ -250,4 +303,44 @@ public class Board extends JPanel implements MouseListener, MouseMotionListener 
     public void mouseExited(MouseEvent e) {
     }
 
+
+
+//precondition - the board is initialized and contains a king of either color. The boolean kingColor corresponds to the color of the king we wish to know the status of.
+          //postcondition - returns true of the king is in check and false otherwise.
+          public boolean isInCheck(boolean kingColor) {
+        ArrayList<Square> checkSquares = new ArrayList<Square>(); 
+        Square kingSquare = null; 
+
+        for (Square[] row : board)
+        {
+            for (Square s : row) 
+            {
+                Piece current = s.getOccupyingPiece();
+                if (current != null) 
+                {
+                    if(current.getColor() != kingColor) 
+                    {
+                        checkSquares.addAll(current.getControlledSquares(board, s));
+                    }
+                    else if (current instanceof King && current.getColor() == kingColor) {
+                    kingSquare = s;
+                    }
+                }
+
+            }
+            
+        }
+        for( Square i : checkSquares) 
+        {
+            if (kingSquare == i) 
+            {
+                return true;
+            }  
+        }
+        return false; 
+
+     }
 }
+
+            
+          
